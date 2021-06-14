@@ -28,6 +28,11 @@ func (q *queue) Peek() (int, error) {
 	return q.data[0], nil
 }
 
+// Size : Return the size of the array.
+func (q *queue) Size() int {
+	return len(q.data)
+}
+
 // Enqueue : Function to add elements into the Queue
 func (q *queue) Enqueue(n int) *queue {
 	q.data = append(q.data, n)
@@ -54,6 +59,8 @@ func main() {
 	fmt.Println(result)
 	result, _ = queue.Dequeue()
 	fmt.Println(result)
+	result = queue.Size()
+	fmt.Println("Size is: ",result)
 	queue.Dequeue()
 	fmt.Println(queue.IsEmpty())
 	_, err := queue.Peek()

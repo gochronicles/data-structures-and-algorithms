@@ -36,14 +36,17 @@ func (d *dataStack) Peek() (string, error) {
 	return "", fmt.Errorf("Peek Error: Stack is empty")
 }
 
+//Size : Return the integer value corresponding to the size of the Stack
 func (d *dataStack) Size() int {
 	return d.stack.Len()
 }
 
+//isEmpty: Return boolean value based on stack's contents
 func (d *dataStack) IsEmpty() bool {
 	return d.stack.Len() == 0
 }
 
+//Main: Starting point of this GO Program
 func main() {
 	dataObject := &dataStack{
 		stack: list.New(),
