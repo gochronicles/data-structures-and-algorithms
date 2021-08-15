@@ -258,7 +258,7 @@ func main() {
 			fmt.Printf("Insert %d\n", val)
 			heap.Insert(val)
 		} else {
-			val, ok := heap.extractMax()
+			val, ok := heap.extractMin()
 			if ok {
 				fmt.Printf("Current Maximum Value -  %d\n", val)
 			}
