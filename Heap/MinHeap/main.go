@@ -1,98 +1,272 @@
 package main
 
 import (
-	"log"
-
-	"github.com/dorin131/go-data-structures/heap"
+	"fmt"
+	"time"
+	"math/rand"
+	"math"
+	"strings"
 )
 
-// MinHeap : represents a Min Heap data structure
+type Node struct {
+	heap  *MinHeap
+	index int
+}
+
 type MinHeap struct {
-	*heap.Heap
+	arr []int
 }
 
-// New : returns a new instance of a Heap
-func New(input []int) *MinHeap {
+func NewMinHeap(values ...int) *MinHeap {
 	h := &MinHeap{
-		&heap.Heap{
-			Items: input,
-		},
+		arr: append([]int{}, values...),
 	}
 
-	if len(h.Items) > 0 {
-		h.buildMinHeap()
+	for i := len(h.arr)/2 - 1; i >= 0; i-- {
+		h.bubbleDown(i)
 	}
 
 	return h
 }
 
-// ExtractMin : removes top element of the heap and returns it
-func (h *MinHeap) ExtractMin() int {
-	if len(h.Items) == 0 {
-		log.Fatal("No items in the heap")
+func (h *MinHeap) CountNodes() int {
+	return len(h.arr)
+}
+
+func (h *MinHeap) Insert(value int) {
+	h.arr = append(h.arr, value)
+	h.bubbleUp(len(h.arr) - 1)
+}
+
+func (h *MinHeap) extractMax() (int, bool) {
+	if len(h.arr) == 0 {
+		return 0, false
 	}
-	minItem := h.Items[0]
-	lastIndex := len(h.Items) - 1
-	h.Items[0] = h.Items[lastIndex]
-
-	// shrinking slice
-	h.Items = h.Items[:len(h.Items)-1]
-
-	h.minHeapifyDown(0)
-
-	return minItem
+	val := h.arr[0]
+	h.arr[0], h.arr[len(h.arr)-1] = h.arr[len(h.arr)-1], h.arr[0]
+	h.arr = h.arr[:len(h.arr)-1]
+	h.bubbleDown(0)
+	return val, true
 }
 
-// Insert : adds a new element to the heap
-func (h *MinHeap) Insert(item int) *MinHeap {
-	h.Items = append(h.Items, item)
-	lastElementIndex := len(h.Items) - 1
-	h.minHeapifyUp(lastElementIndex)
-
-	return h
-}
-
-// buildMinHeap : given a slice, arrange the elements so that
-// they satisfy the Min Heap properties
-func (h *MinHeap) buildMinHeap() {
-	for i := len(h.Items)/2 - 1; i >= 0; i-- {
-		h.minHeapifyDown(i)
+func (h *MinHeap) bubbleUp(idx int) {
+	for {
+		parentIdx := (idx - 1) / 2
+		if idx == 0 || h.arr[parentIdx] <= h.arr[idx] {
+			break
+		}
+		h.arr[idx], h.arr[parentIdx] = h.arr[parentIdx], h.arr[idx]
+		idx = parentIdx
 	}
 }
+func (h *MinHeap) bubbleDown(idx int) {
+	for {
+		// pick child to swap (smaller one)
+		childIdx := idx*2 + 1                       // left child
+		if childIdx >= len(h.arr) || childIdx < 0 { // <0 int overflow
+			break
+		}
+		rightIdx := childIdx + 1
+		if rightIdx < len(h.arr) && h.arr[childIdx] >= h.arr[rightIdx] {
+			childIdx = rightIdx
+		}
+		// swap
+		if h.arr[childIdx] >= h.arr[idx] {
+			break
+		}
+		h.arr[idx], h.arr[childIdx] = h.arr[childIdx], h.arr[idx]
+		idx = childIdx
+	}
+}
 
-// minHeapifyDown : takes the top element and moves it down until
-// the Min Heap properties are satisfied
-func (h *MinHeap) minHeapifyDown(index int) {
-	for (h.HasLeft(index) && (h.Items[index] > h.Left(index))) ||
-		(h.HasRight(index) && (h.Items[index] > h.Right(index))) {
-		if (h.HasLeft(index) && (h.Items[index] > h.Left(index))) &&
-			(h.HasRight(index) && (h.Items[index] > h.Right(index))) {
-			if h.Left(index) < h.Right(index) {
-				h.Swap(index, h.GetLeftIndex(index))
-				index = h.GetLeftIndex(index)
+
+func (h *MinHeap) Root() *Node {
+	return h.nodeAt(0)
+}
+
+func (h *MinHeap) Height() int {
+	return int(math.Floor(math.Log2(float64(len(h.arr)))))
+}
+
+func (h *MinHeap) PrintTree() {
+	for i := 0; i < len(h.arr); i++ {
+		node := h.nodeAt(i)
+		// left-side whitespaces
+		if leftChild := node.LeftChild(); leftChild != nil {
+			if node.isRightChild() {
+				fmt.Print(strings.Repeat("-", leftChild.calcPrintWidth()))
 			} else {
-				h.Swap(index, h.GetRightIndex(index))
-				index = h.GetRightIndex(index)
+				fmt.Print(strings.Repeat(" ", leftChild.calcPrintWidth()))
 			}
-		} else if h.HasLeft(index) && (h.Items[index] > h.Left(index)) {
-			h.Swap(index, h.GetLeftIndex(index))
-			index = h.GetLeftIndex(index)
+
+		}
+		// node value
+		fmt.Printf(" %d ", node.Value())
+		// right-side whitespaces
+		if rightChild := node.RightChild(); rightChild != nil {
+			if i == 0 || node.isRightChild() {
+				fmt.Print(strings.Repeat(" ", rightChild.calcPrintWidth()))
+			} else {
+				fmt.Print(strings.Repeat("-", rightChild.calcPrintWidth()))
+			}
+		}
+		if node.isRightMost() {
+			if i == len(h.arr)-1 && !node.isRightChild() {
+				if parent := node.Parent(); parent != nil {
+					if vw := parent.calcValueWidth(); vw > 0 {
+						fmt.Print(strings.Repeat("-", vw/2))
+						fmt.Print("+")
+					}
+				}
+			}
+			fmt.Println()
 		} else {
-			h.Swap(index, h.GetRightIndex(index))
-			index = h.GetRightIndex(index)
+			if rightParent := node.findRightParent(); rightParent != nil {
+				if vw := rightParent.calcValueWidth(); vw > 0 {
+					if node.isRightChild() {
+						fmt.Print(strings.Repeat(" ", vw))
+					} else {
+						fmt.Print(strings.Repeat("-", vw/2))
+						fmt.Print("+")
+						fmt.Print(strings.Repeat("-", (vw-1)/2))
+					}
+				}
+			}
 		}
 	}
 }
 
-// minHeapUp : takes the last element and moves it up until
-// the Min Heap properties are satisfied
-func (h *MinHeap) minHeapifyUp(index int) {
-	for h.HasParent(index) && (h.Parent(index) > h.Items[index]) {
-		h.Swap(h.GetParentIndex(index), index)
-		index = h.GetParentIndex(index)
+func (h *MinHeap) Validate() bool {
+	if root := h.Root(); root != nil {
+		return root.validate()
+	}
+	return true
+}
+
+func (h *MinHeap) nodeAt(index int) *Node {
+	if index < 0 || index >= len(h.arr) {
+		return nil
+	}
+	return &Node{heap: h, index: index}
+}
+
+func (n *Node) Value() int {
+	return n.heap.arr[n.index]
+}
+
+func (n *Node) Parent() *Node {
+	return n.heap.nodeAt((n.index+1)/2 - 1)
+}
+
+func (n *Node) LeftChild() *Node {
+	return n.heap.nodeAt((n.index+1)*2 - 1)
+}
+
+func (n *Node) RightChild() *Node {
+	return n.heap.nodeAt((n.index + 1) * 2)
+}
+
+func (n *Node) Depth() int {
+	return int(math.Floor(math.Log2(float64(n.index + 1))))
+}
+
+func (n *Node) Height() int {
+	height := 0
+	if n.LeftChild() != nil {
+		leftHeight := n.LeftChild().Height()
+		height = leftHeight + 1
+	}
+	if n.RightChild() != nil {
+		rightHeight := n.RightChild().Height()
+		if rightHeight+1 > height {
+			height = rightHeight + 1
+		}
+	}
+	return height
+}
+
+func (n *Node) calcValueWidth() int {
+	v := n.Value()
+	if v == 0 {
+		return 3
+	}
+	return int(math.Log10(float64(v))) + 3
+}
+
+func (n *Node) calcPrintWidth() int {
+	width := n.calcValueWidth()
+
+	if n.LeftChild() != nil {
+		width += n.LeftChild().calcPrintWidth()
+	}
+	if n.RightChild() != nil {
+		width += n.RightChild().calcPrintWidth()
+	}
+
+	return width
+}
+
+func (n *Node) isRightChild() bool {
+	return n.index > 0 && n.index%2 == 0
+}
+
+func (n *Node) isRightMost() bool {
+	return n.index == len(n.heap.arr)-1 ||
+		n.index == int(math.Exp2(float64(n.Depth()+1)))-2
+}
+
+func (n *Node) findRightParent() *Node {
+	node := n
+	for {
+		if !node.isRightChild() {
+			return node.Parent()
+		}
+		node = node.Parent()
 	}
 }
 
-func main() {
+func (n *Node) validate() bool {
+	if leftChild := n.LeftChild(); leftChild != nil {
+		if leftChild.Value() < n.Value() || !leftChild.validate() {
+			fmt.Printf("SELF: %d / LEFT: %d\n", n.Value(), leftChild.Value())
+			return false
+		}
+	}
+	if rightChild := n.RightChild(); rightChild != nil {
+		if rightChild.Value() < n.Value() || !rightChild.validate() {
+			fmt.Printf("SELF: %d / RIGHT: %d\n", n.Value(), rightChild.Value())
+			return false
+		}
+	}
+	return true
+}
 
+
+func main() {
+	valMax := 100
+	rand.Seed(time.Now().Unix())
+	input := []int{}
+	for i := 0; i < 20; i++ {
+		input = append(input, rand.Intn(valMax))
+	}
+	heap := NewMinHeap(input...)
+	for t := 0; t <= 100; t++ {
+		heap.PrintTree()
+		fmt.Println()
+		time.Sleep(100 * time.Millisecond)
+		if !heap.Validate() {
+			panic("Invalid heap")
+		}
+		if rand.Int()%2 == 0 {
+			val := rand.Intn(valMax)
+			fmt.Printf("Insert %d\n", val)
+			heap.Insert(val)
+		} else {
+			val, ok := heap.extractMax()
+			if ok {
+				fmt.Printf("Current Maximum Value -  %d\n", val)
+			}
+		}
+		fmt.Println()
+	}
 }
