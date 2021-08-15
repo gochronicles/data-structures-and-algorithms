@@ -25,7 +25,6 @@ func NewMinHeap(values ...int) *MinHeap {
 	for i := len(h.arr)/2 - 1; i >= 0; i-- {
 		h.bubbleDown(i)
 	}
-
 	return h
 }
 
@@ -38,7 +37,7 @@ func (h *MinHeap) Insert(value int) {
 	h.bubbleUp(len(h.arr) - 1)
 }
 
-func (h *MinHeap) extractMax() (int, bool) {
+func (h *MinHeap) extractMin() (int, bool) {
 	if len(h.arr) == 0 {
 		return 0, false
 	}
@@ -88,7 +87,7 @@ func (h *MinHeap) Height() int {
 	return int(math.Floor(math.Log2(float64(len(h.arr)))))
 }
 
-func (h *MinHeap) PrintTree() {
+func (h *MinHeap) PrintHeap() {
 	for i := 0; i < len(h.arr); i++ {
 		node := h.nodeAt(i)
 		// left-side whitespaces
@@ -98,7 +97,6 @@ func (h *MinHeap) PrintTree() {
 			} else {
 				fmt.Print(strings.Repeat(" ", leftChild.calcPrintWidth()))
 			}
-
 		}
 		// node value
 		fmt.Printf(" %d ", node.Value())
@@ -113,7 +111,7 @@ func (h *MinHeap) PrintTree() {
 		if node.isRightMost() {
 			if i == len(h.arr)-1 && !node.isRightChild() {
 				if parent := node.Parent(); parent != nil {
-					if vw := parent.calcValueWidth(); vw > 0 {
+					if vw := parent.calcWidth(); vw > 0 {
 						fmt.Print(strings.Repeat("-", vw/2))
 						fmt.Print("+")
 					}
@@ -122,7 +120,7 @@ func (h *MinHeap) PrintTree() {
 			fmt.Println()
 		} else {
 			if rightParent := node.findRightParent(); rightParent != nil {
-				if vw := rightParent.calcValueWidth(); vw > 0 {
+				if vw := rightParent.calcWidth(); vw > 0 {
 					if node.isRightChild() {
 						fmt.Print(strings.Repeat(" ", vw))
 					} else {
@@ -185,7 +183,7 @@ func (n *Node) Height() int {
 	return height
 }
 
-func (n *Node) calcValueWidth() int {
+func (n *Node) calcWidth() int {
 	v := n.Value()
 	if v == 0 {
 		return 3
@@ -194,15 +192,13 @@ func (n *Node) calcValueWidth() int {
 }
 
 func (n *Node) calcPrintWidth() int {
-	width := n.calcValueWidth()
-
+	width := n.calcWidth()
 	if n.LeftChild() != nil {
 		width += n.LeftChild().calcPrintWidth()
 	}
 	if n.RightChild() != nil {
 		width += n.RightChild().calcPrintWidth()
 	}
-
 	return width
 }
 
@@ -251,7 +247,7 @@ func main() {
 	}
 	heap := NewMinHeap(input...)
 	for t := 0; t <= 100; t++ {
-		heap.PrintTree()
+		heap.PrintHeap()
 		fmt.Println()
 		time.Sleep(100 * time.Millisecond)
 		if !heap.Validate() {
